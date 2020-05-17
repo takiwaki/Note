@@ -2,14 +2,14 @@ reset
 
 pdfflag=1
 if(pdfflag==1)set terminal push
-if(pdfflag==1)set terminal pdfcairo enhanced
+if(pdfflag==1)set terminal pdfcairo dash enhanced
 if(pdfflag==1)set encoding utf8
 
 set style line 11 lt 1 lw 6 lc rgb "#ff2800" # universal design red 
 set style line 12 lt 2 lw 6 lc rgb "#ff2800" # universal design red 
 
 set style line 21 lt 1 lw 6 lc rgb "#0041ff" # universal design blue
-set style line 21 lt 2 lw 6 lc rgb "#0041ff" # universal design blue
+set style line 22 lt 2 lw 6 lc rgb "#0041ff" # universal design blue
 
 set style line 3 lt 1 lw 2 lc rgb "#35a16B" # universal design green
 
@@ -45,7 +45,7 @@ plot lastx=0.0,lasty=0.5,integ = 0.0,\
      lasty=f($1), \
      integ+0.5) w l ls 11 notitle "integral"\
     ,lastx=0.0,lasty=0.0,integ = 0.0,\
-     "+" using 1:(g($1)) w l ls 21 title "x*exp(-x^2)", \
+     "+" using 1:(g($1)) w l ls 22 title "x*exp(-x^2)", \
      "+" using 1:(dx=$1-lastx, \
      integ = ($0==0 ? 0.0 : integ+dx*(g($1)+lasty)*0.5), \
      lastx=$1, \
