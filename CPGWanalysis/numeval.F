@@ -1,36 +1,57 @@
       module commons
       implicit none
-      integer,parameter::nt1=2000,nt2=2000,nt3=100
+      real(8),parameter:: pi=3.14159265358979323846264338327950288419716939
+      real(8),parameter:: pi2=2.0d0*pi
+
+      integer,parameter::nt1=2000,nt2=2000,nt3=100,nt4=100
       real(8),dimension(nt1)::x1b
       real(8),dimension(nt2)::x2b
       real(8),dimension(nt3)::x3b
+      real(8),dimension(nt4)::x4b
       real(8),dimension(nt1+1)::x1a
       real(8),dimension(nt2+1)::x2a
       real(8),dimension(nt3+1)::x3a
+      real(8),dimension(nt4+1)::x4a
 
       real(8)::x1min,x1max,dx1
       real(8)::x2min,x2max,dx2
       real(8)::x3min,x3max,dx3
+      real(8)::x4min,x4max,dx4
+      data x1min /  0.0d0 /
+      data x1max / 10.0d0 /
+      data x2min /  0.0d0 /
+      data x2max / 10.0d0 /
+      data x3min / 0.0d0    /
+      data x3max / pi2 /
+      data x4min / 0.0d0    /
+      data x4max / pi2 /
 
-      integer,parameter::nI=100
+      integer,parameter::nI=1000
       real(8),dimension(nI)::In,PIn
       real(8)::Imin,Imax,dI
+      data Imin /  0.0d0 /
+      data Imax / 100.0d0 /
 
-      integer,parameter::nV=200
+      integer,parameter::nV=2*nI
       real(8),dimension(nV)::Vn,PVn
       real(8)::Vmin,Vmax,dV
+      data Vmin / -100.0d0 /
+      data Vmax /  100.0d0 /
 
-      real(8),parameter:: pi=3.14159265358979323846264338327950288419716939
       end module commons
-
 
       program numval
       implicit none
+      integer:: is
+      real(8)::s
 
       call MakeGrid
-      call EvalIn
-      call EvalVn
-      call Output
+      do is=0,10
+         s=dble(is)
+         call EvalIsn(s)
+         call EvalVsn(s)
+         call Output(is)
+      enddo
 
       end program numval
 !=====================================
@@ -39,8 +60,6 @@
       implicit none
       integer i,j,k,l
 
-      x1min=0.0d0
-      x1max=6.0d0
       dx1=(x1max-x1min)/nt1
       do i=1,nt1+1
         x1a(i)=x1min+(i-1)*dx1
@@ -49,8 +68,6 @@
          x1b(i)=0.5d0*(x1a(i)+x1a(i+1))
       enddo
 
-      x2min=0.0d0
-      x2max=6.0d0
       dx2=(x2max-x2min)/nt2
       do j=1,nt2+1
         x2a(j)=x2min+(j-1)*dx2
@@ -60,8 +77,6 @@
          x2b(j)=0.5d0*(x2a(j)+x2a(j+1))
       enddo
 
-      x3min=0.0d0
-      x3max=2.0d0*pi
       dx3=(x3max-x3min)/nt3
       do k=1,nt3+1
         x3a(k)=x3min+(k-1)*dx3
@@ -71,63 +86,85 @@
          x3b(k)=0.5d0*(x3a(k)+x3a(k+1))
       enddo
 
+      dx4=(x4max-x4min)/nt4
+      do l=1,nt4+1
+        x4a(l)=x4min+(l-1)*dx4
+      enddo
+
+      do l=1,nt4
+         x4b(l)=0.5d0*(x4a(l)+x4a(l+1))
+      enddo
+
       return
       end subroutine MakeGrid
 !=====================================
-      subroutine EvalIn
+      subroutine EvalIsn(s)
       use commons
       implicit none
-      integer i,j,k,l
+      real(8),intent(in)::s
+      integer:: i,j,k,l
       real(8)::Indummy
       real(8)::Ptotal
       integer::index
+      
+      write(6,*) "EvalIsn",s
 
-      Imin=0.0d0
-      Imax=6.0d0
       dI=(Imax-Imin)/nI
       do l=1,nI
          In(l)=dI*(l-0.5)
       enddo
         PIn(:)=0.0d0
 
+      do l=1,nt4
+      do k=1,nt3
       do j=1,nt2
       do i=1,nt1
-         Indummy=(x1b(i)+x2b(j))/2.0d0
+         Indummy= s + (x1b(i)+x2b(j))/2.0d0
+     &     + sqrt(s) * sqrt(x1b(i))*cos(x3b(k))
+     &     + sqrt(s) * sqrt(x2b(j))*sin(x4b(l))
          Index  = floor(Indummy/dI)+1
          Index  =min(max(Index,1),nI)
           PIn(Index)= PIn(Index)
      &              + exp(-x1b(i))*exp(-x2b(j))
      &               *(x1a(i+1)-x1a(i))
      &               *(x2a(j+1)-x2a(j))
+     &               *(x3a(k+1)-x3a(k))
+     &               *(x4a(l+1)-x4a(l))
+      enddo
+      enddo
       enddo
       enddo
 
       Ptotal=sum(PIn(:))
       PIn(:)=PIn(:)/Ptotal
       return
-      end subroutine EvalIn
+      end subroutine EvalIsn
 
 !=====================================
-      subroutine EvalVn
+      subroutine EvalVsn(s)
       use commons
       implicit none
-      integer i,j,k,l
+      real(8),intent(in)::s
+      integer:: i,j,k,l,m
       real(8)::Vndummy
       real(8)::Ptotal
       integer::index
+      real(8),dimension(nV)::PVnhalf
 
-      Vmin=-6.0d0
-      Vmax= 6.0d0
+      write(6,*) "EvalVsn",s
       dV=(Vmax-Vmin)/nV
-      do l=1,nV
-         Vn(l)=dV*(l-nV/2-0.5)
+      do m=1,nV
+         Vn(m)=dV*(m-nV/2-0.5)
       enddo
         PVn(:)=0.0d0
 
+      do l=1,nt4
       do k=1,nt3
       do j=1,nt2
       do i=1,nt1
-         Vndummy=sqrt(x1b(i)*x2b(j))*cos(x3b(k))
+         Vndummy= s
+     & +sqrt(x1b(i)*x2b(j))*(cos(x3b(k))*sin(x4b(l))-sin(x3b(k))*cos(x4b(l)))
+     & + sqrt(s) * sqrt(x1b(i))*cos(x3b(k))+ sqrt(s) * sqrt(x2b(j))*sin(x4b(l))
          Index  = floor(Vndummy/dV)+1+nV/2
 !         write(6,*) "i,j,k",i,j,k
 !         write(6,*) "Vn,dV",Vndummy,dV
@@ -138,37 +175,50 @@
      &               *(x1a(i+1)-x1a(i))
      &               *(x2a(j+1)-x2a(j))
      &               *(x3a(k+1)-x3a(k))
+     &               *(x4a(l+1)-x4a(l))
 !          stop
+      enddo
       enddo
       enddo
       enddo
 
       Ptotal=sum(PVn(:))
-      PVn(:)=PVn(:)/Ptotal
+      PVnhalf(:)=PVn(:)/Ptotal*0.5d0
+
+      PVn(:)=0.0d0
+      do m=1,nV
+         PVn(m)=PVnhalf(m)+PVnhalf(nV-m+1)
+      enddo
+
 !      stop
       return
-      end subroutine EvalVn
+      end subroutine EvalVsn
 
 
 !=====================================
-      subroutine Output
+      subroutine Output(is)
       use commons
       implicit none
-      integer i,j,k,l
+      integer,intent(in)::is
+      integer i,j,k,l,m
       integer,parameter::unitdmp=102
       character*50::path
 
-      path="In.dat"
+      write(6,*) "Output",is
+
+      write(path,'(a3,i2.2,a4)')"Isn,",is,".dat"
       open(unit=unitdmp,file=path,status='replace',form='formatted') 
-      do l=1,nI
-         write(unitdmp,*) In(l),PIn(l)
+      write(unitdmp,'(a1,1x,i10.0)')"#",nI
+      do m=1,nI
+         write(unitdmp,*) In(m),PIn(m)
       enddo
       close(unitdmp)
 
-      path="Vn.dat"
-      open(unit=unitdmp,file=path,status='replace',form='formatted') 
-      do l=1,nV
-         write(unitdmp,*) Vn(l),PVn(l)
+      write(path,'(a3,i2.2,a4)')"Vsn,",is,".dat"
+      open(unit=unitdmp,file=path,status='replace',form='formatted')
+      write(unitdmp,'(a1,1x,i10.0)')"#",nV 
+      do m=1,nV
+         write(unitdmp,*) Vn(m),PVn(m)
       enddo
       close(unitdmp)
 
