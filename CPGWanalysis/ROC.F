@@ -25,7 +25,7 @@
       real(8)::s
 
          call NoiseDataRead
-      do is=1,5
+      do is=1,10
          call DataRead(is)
          call EvalROC
          call Output(is)
@@ -54,8 +54,9 @@
          read(unitdmp,*) In(m),PIn(m)
       enddo
       close(unitdmp)
-      Imin=In(1)
-      Imax=In(nI)
+      dI=In(2)-In(1)
+      Imin=0.0d0
+      Imax=In(nI)+0.5d0*dI
 
       write(path,'(a3,i2.2,a4)')"Vsn,",is,".dat"
       open(unit=unitdmp,file=path,status='old',form='formatted')
@@ -66,8 +67,9 @@
       enddo
       close(unitdmp)
 
-      Vmin=Vn(1)
-      Vmax=Vn(nV)
+      dV=Vn(2)-Vn(1)
+      Vmin=Vn(1)-0.5d0*dI
+      Vmax=Vn(nV)+0.5d0*dI
       is_initd =.true.
       return
       end subroutine NoiseDataRead
@@ -129,10 +131,10 @@
       VDE(0)=0.0d0
       do m=1,nT
           TH(m) = In(nI-m+1)
-         IFA(m) = IFA(m-1) +  PIn(nI-m+1)
-         VFA(m) = VFA(m-1) +  PVn(nV-m+1)+  PVn(m)
-         IDE(m) = IDE(m-1) + PIsn(nI-m+1)
-         VDE(m) = VDE(m-1) + PVsn(nV-m+1)+ PVsn(m)
+         IFA(m) = IFA(m-1) +  PIn (nI-m+1)          *dI
+         VFA(m) = VFA(m-1) + (PVn (nV-m+1)+ PVn (m))*dV
+         IDE(m) = IDE(m-1) +  PIsn(nI-m+1)          *dI
+         VDE(m) = VDE(m-1) + (PVsn(nV-m+1)+ PVsn(m))*dV
       enddo
 
       is_initd =.true.
